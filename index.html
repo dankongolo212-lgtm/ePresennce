@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#27ae60"/>
+<title>ePrésence Étudiant — UDBL</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --green:#2ecc71;--green-dark:#27ae60;--green-light:#d5f5e3;
+  --danger:#e74c3c;--danger-light:#fde8e6;
+  --warning:#f39c12;--warning-light:#fef3e2;
+  --info:#3b9eff;--info-light:#e8f4ff;
+  --purple:#9b59b6;
+  --bg:#f0f6ff;--card:#fff;--border:rgba(0,0,0,.08);
+  --text:#1a2332;--gray:#6b7280;--gray-light:#f4f7fb;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow-x:hidden;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── TOPBAR ── */
+.topbar{background:#fff;padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);flex-shrink:0;position:sticky;top:0;z-index:100;}
+.topbar-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:800;flex:1;}
+.topbar-sub{font-size:11px;color:var(--gray);}
+.topbar-back{background:none;border:none;font-size:22px;cursor:pointer;padding:4px;line-height:1;color:var(--gray);}
+
+/* ── SCROLL ── */
+.scroll-content{flex:1;overflow-y:auto;padding:18px 16px 32px;-webkit-overflow-scrolling:touch;}
+
+/* ── WELCOME ── */
+.welcome-hero{background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:18px;padding:28px 22px;text-align:center;color:#fff;margin-bottom:20px;}
+.welcome-hero .big-icon{font-size:60px;margin-bottom:10px;}
+.welcome-hero h1{font-size:21px;font-weight:900;margin-bottom:5px;}
+.welcome-hero p{font-size:13px;opacity:.88;line-height:1.6;}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 2px 14px rgba(0,0,0,.06);border:1px solid var(--border);margin-bottom:14px;}
+.card h2{font-size:14px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card h3{font-size:12px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:11px;}
+
+/* ── FORMS ── */
+.fg{margin-bottom:13px;}
+.fg label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:5px;}
+.fg input,.fg select{width:100%;background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:12px 13px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;}
+.fg input:focus,.fg select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(46,204,113,.12);}
+.code-input{width:100%;background:#f8fafc;border:2px solid var(--green);border-radius:12px;padding:14px 13px;font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--text);outline:none;text-align:center;letter-spacing:4px;text-transform:uppercase;}
+
+/* ── BUTTONS ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 18px;border-radius:12px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;border:none;transition:all .18s;text-decoration:none;-webkit-appearance:none;}
+.btn+.btn{margin-top:10px;}
+.btn-primary{background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff;box-shadow:0 4px 18px rgba(46,204,113,.32);}
+.btn-primary:active{transform:scale(.97);box-shadow:0 2px 10px rgba(46,204,113,.2);}
+.btn-outline{background:#fff;border:2px solid var(--green);color:var(--green-dark);}
+.btn-outline:active{background:var(--green-light);}
+.btn-gray{background:var(--gray-light);color:var(--gray);border:1px solid var(--border);}
+.btn-danger{background:linear-gradient(135deg,var(--danger),#c0392b);color:#fff;}
+.btn-sm{padding:9px 14px;font-size:13px;width:auto;border-radius:9px;}
+.btn:disabled{opacity:.5;pointer-events:none;}
+
+/* ── SCANNER ── */
+#scanner-wrap{position:relative;width:100%;background:#000;overflow:hidden;flex-shrink:0;}
+#scanner-video{width:100%;height:100%;object-fit:cover;display:block;}
+#scanner-canvas{display:none;}
+.scan-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.scan-box{position:relative;width:240px;height:240px;}
+/* Coins animés */
+.scan-box::before,.scan-box::after,.scan-box .c3,.scan-box .c4{
+  content:'';position:absolute;width:44px;height:44px;
+}
+.scan-box::before{top:0;left:0;border-top:4px solid var(--green);border-left:4px solid var(--green);border-radius:6px 0 0 0;}
+.scan-box::after{top:0;right:0;border-top:4px solid var(--green);border-right:4px solid var(--green);border-radius:0 6px 0 0;}
+.scan-box .c3{bottom:0;left:0;border-bottom:4px solid var(--green);border-left:4px solid var(--green);border-radius:0 0 0 6px;}
+.scan-box .c4{bottom:0;right:0;border-bottom:4px solid var(--green);border-right:4px solid var(--green);border-radius:0 0 6px 0;}
+.scan-line{position:absolute;left:4px;right:4px;height:3px;background:linear-gradient(90deg,transparent,rgba(46,204,113,.9),transparent);border-radius:2px;animation:scanMove 2.2s ease-in-out infinite;top:0;}
+@keyframes scanMove{0%{top:4px;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:232px;opacity:0}}
+/* Masque autour de la zone de scan */
+.scan-mask-top,.scan-mask-bottom,.scan-mask-left,.scan-mask-right{position:absolute;background:rgba(0,0,0,.5);}
+.scan-mask-top{top:0;left:0;right:0;height:calc(50% - 120px);}
+.scan-mask-bottom{bottom:0;left:0;right:0;height:calc(50% - 120px);}
+.scan-mask-left{top:calc(50% - 120px);left:0;width:calc(50% - 120px);height:240px;}
+.scan-mask-right{top:calc(50% - 120px);right:0;width:calc(50% - 120px);height:240px;}
+.scan-hint{margin-top:20px;color:rgba(255,255,255,.88);font-size:13px;font-weight:600;text-align:center;text-shadow:0 1px 4px rgba(0,0,0,.5);}
+
+/* Flash d'animation au scan */
+@keyframes scanSuccess{0%{opacity:0}30%{opacity:.6}100%{opacity:0}}
+.scan-flash{position:absolute;inset:0;background:rgba(46,204,113,.5);animation:scanSuccess .5s ease forwards;pointer-events:none;}
+
+/* Caméra toolbar */
+.scanner-toolbar{background:#111;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-shrink:0;}
+.cam-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:8px 14px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;}
+.cam-btn:active{background:rgba(255,255,255,.22);}
+.cam-btn.active-cam{background:rgba(46,204,113,.25);border-color:rgba(46,204,113,.5);color:var(--green);}
+.scanner-status{background:#111;padding:8px 16px;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);text-align:center;flex-shrink:0;}
+.scanner-status.scanning{color:var(--green);}
+.scanner-status.error{color:var(--danger);}
+.scanner-actions{background:#fff;padding:14px 16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+
+/* ── INFO ROWS ── */
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f4f8;font-size:13px;}
+.info-row:last-child{border-bottom:none;}
+.info-label{color:var(--gray);font-weight:600;}
+.info-val{font-weight:700;font-family:'Space Mono',monospace;font-size:11px;text-align:right;max-width:60%;}
+
+/* ── TIMER ── */
+.timer-card{background:#fff;border-radius:18px;padding:22px 18px;text-align:center;box-shadow:0 4px 22px rgba(0,0,0,.08);border:2px solid var(--green);margin-bottom:14px;position:relative;overflow:hidden;}
+.timer-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(46,204,113,.04),rgba(0,150,255,.02));pointer-events:none;}
+.timer-label{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;}
+.timer-display{font-size:54px;font-weight:900;font-family:'Space Mono',monospace;color:var(--green);line-height:1;margin-bottom:4px;transition:color .3s;}
+.timer-display.warn{color:var(--warning);}
+.timer-display.done{color:var(--green);animation:timerDone .5s ease;}
+@keyframes timerDone{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.timer-sub{font-size:12px;color:var(--gray);margin-bottom:14px;}
+.timer-bar-wrap{background:#f0f4f8;border-radius:20px;height:9px;overflow:hidden;}
+.timer-bar{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--green),#00e87a);transition:width .6s ease;}
+.timer-pct{font-size:11px;font-weight:700;color:var(--green);margin-top:6px;}
+
+/* ── GEO ── */
+.geo-card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 2px 14px rgba(0,0,0,.06);border:1px solid var(--border);margin-bottom:14px;}
+.geo-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--gray-light);}
+.geo-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;transition:background .3s;}
+.geo-dot.ok{background:var(--green);box-shadow:0 0 0 3px rgba(46,204,113,.25);animation:geoPulse 2s ease infinite;}
+.geo-dot.err{background:var(--danger);}
+.geo-dot.wait{background:var(--warning);animation:geoPulse .8s ease infinite;}
+@keyframes geoPulse{0%,100%{opacity:1}50%{opacity:.35}}
+.geo-main-text{font-size:13px;font-weight:700;}
+.geo-sub-text{font-size:11px;color:var(--gray);margin-top:1px;}
+.geo-detail{margin-top:10px;font-size:12px;color:var(--gray);padding:8px 12px;background:var(--gray-light);border-radius:8px;display:none;}
+.geo-detail.show{display:block;}
+.geo-retry-btn{margin-top:8px;width:100%;background:none;border:1.5px solid var(--info);color:var(--info);padding:7px 12px;border-radius:8px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* ── BANNERS ── */
+.banner{border-radius:12px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:12px;}
+.banner-pause{background:var(--warning-light);border:1.5px solid var(--warning);}
+.banner-cancel{background:var(--danger-light);border:1.5px solid var(--danger);}
+.banner-ok{background:var(--green-light);border:1.5px solid var(--green);}
+.banner-info{background:var(--info-light);border:1.5px solid var(--info);}
+.banner-icon{font-size:24px;flex-shrink:0;}
+.banner-title{font-size:13px;font-weight:800;}
+.banner-sub{font-size:12px;color:var(--gray);margin-top:2px;line-height:1.5;}
+
+/* ── STATUS PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;}
+.pill-green{background:var(--green-light);color:var(--green-dark);}
+.pill-orange{background:var(--warning-light);color:var(--warning);}
+.pill-red{background:var(--danger-light);color:var(--danger);}
+.pill-blue{background:var(--info-light);color:var(--info);}
+.pill-gray{background:var(--gray-light);color:var(--gray);}
+
+/* ── VALIDATED ── */
+.validated-hero{background:linear-gradient(135deg,#1db954,#0d7a35);padding:44px 20px 36px;text-align:center;color:#fff;flex-shrink:0;}
+.check-circle{width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:38px;animation:popIn .55s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{transform:scale(0)opacity:0}to{transform:scale(1);opacity:1}}
+.validated-hero h1{font-size:22px;font-weight:900;margin-bottom:5px;}
+.validated-hero p{font-size:13px;opacity:.85;}
+
+/* ── STEPS ── */
+.steps-bar{display:flex;align-items:center;gap:5px;padding:10px 18px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;}
+.step-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;transition:all .3s;}
+.step-dot.done{background:var(--green);color:#fff;}
+.step-dot.active{background:var(--info);color:#fff;}
+.step-dot.todo{background:var(--gray-light);color:var(--gray);}
+.step-line{flex:1;height:2px;border-radius:2px;transition:background .3s;}
+.step-line.done{background:var(--green);}
+.step-line.todo{background:var(--gray-light);}
+
+/* ── HISTORY ── */
+.history-item{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 8px rgba(0,0,0,.05);border:1px solid var(--border);margin-bottom:10px;}
+.history-item-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.history-cours{font-size:13px;font-weight:800;}
+.history-date{font-size:11px;color:var(--gray);margin-top:2px;}
+.history-dur{font-size:12px;color:var(--gray);margin-top:6px;}
+
+/* ── LEAVE SHEET ── */
+.leave-sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:flex-end;justify-content:center;}
+.leave-sheet.open{display:flex;}
+.leave-box{background:#fff;border-radius:20px 20px 0 0;padding:24px 18px 36px;width:100%;max-width:480px;animation:slideUp .22s ease;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.leave-opt{width:100%;background:#f8fafc;border:1.5px solid var(--border);border-radius:11px;padding:13px 16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:left;margin-bottom:9px;transition:border-color .15s,background .15s;display:flex;align-items:center;gap:10px;}
+.leave-opt:hover,.leave-opt:active{border-color:var(--green);background:var(--green-light);}
+
+/* ── NOTIF CARD ── */
+.notif-card{background:linear-gradient(135deg,#e8f4ff,#f0eaff);border:1.5px solid #c8e0ff;border-radius:14px;padding:14px 16px;margin-bottom:14px;}
+.notif-card h3{font-size:13px;font-weight:800;margin-bottom:5px;}
+.notif-card p{font-size:12px;color:var(--gray);margin-bottom:11px;line-height:1.5;}
+
+/* ── LOADING ── */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:999;}
+.loading-overlay.on{display:flex;}
+.spinner{width:42px;height:42px;border:4px solid var(--green-light);border-top-color:var(--green);border-radius:50%;animation:spin .75s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;font-weight:700;color:var(--green);}
+
+/* ── TOAST ── */
+.toast-wrap{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;width:calc(100% - 28px);max-width:400px;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+.toast{background:#fff;border-radius:12px;padding:11px 15px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;box-shadow:0 6px 28px rgba(0,0,0,.14);pointer-events:all;animation:toastIn .25s ease;}
+@keyframes toastIn{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+.toast.success{border-left:4px solid var(--green);}
+.toast.error{border-left:4px solid var(--danger);}
+.toast.warning{border-left:4px solid var(--warning);}
+.toast.info{border-left:4px solid var(--info);}
+.toast-icon{font-size:17px;flex-shrink:0;}
+
+/* ── DIVIDER ── */
+hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
+</style>
+</head>
+<body>
+
+<!-- ══════════ ÉCRAN 1 : ACCUEIL ══════════ -->
+<div class="screen active" id="sc-home">
+  <div class="scroll-content" style="padding-top:24px;">
+
+    <div class="welcome-hero">
+      <div class="big-icon">🎓</div>
+      <h1>ePrésence Étudiant</h1>
+      <p>Université Don Bosco de Lubumbashi<br>Scannez le QR code de votre auditoire pour enregistrer votre présence.</p>
+    </div>
+
+    <div class="card">
+      <h2>👤 Votre identification</h2>
+      <div class="fg">
+        <label>Matricule *</label>
+        <input id="inp-mat" type="text" placeholder="ex: UDBL-FSI-L3-001" autocomplete="off" style="text-transform:uppercase" oninput="autofillStudent()">
+      </div>
+      <div class="fg">
+        <label>Nom complet *</label>
+        <input id="inp-nom" type="text" placeholder="ex: Dan Kongolo">
+      </div>
+      <div class="fg">
+        <label>Promotion</label>
+        <select id="inp-promo">
+          <option value="L1">L1</option><option value="L2">L2</option>
+          <option value="L3" selected>L3</option><option value="L4">L4</option>
+          <option value="M1">M1</option><option value="M2">M2</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="notif-card">
+      <h3>🔔 Notifications push</h3>
+      <p>Activez pour recevoir une alerte quand votre présence est validée, ou si la séance est annulée.</p>
+      <button class="btn btn-outline btn-sm" id="btn-notif" onclick="requestNotif()">Activer les notifications</button>
+    </div>
+
+    <button class="btn btn-primary" onclick="goScan()">
+      <span>📷</span> Scanner le QR Code
+    </button>
+    <button class="btn btn-outline" onclick="goManual()" style="margin-top:10px;">
+      <span>⌨️</span> Saisir le code manuellement
+    </button>
+    <button class="btn btn-gray" onclick="goHistory()" style="margin-top:10px;">
+      <span>📋</span> Mon historique de présences
+    </button>
+  </div>
+</div>
+
+<!-- ══════════ ÉCRAN 2 : SCANNER ══════════ -->
+<div class="screen" id="sc-scan">
+  <div class="topbar">
+    <div class="topbar-logo">📷</div>
+    <div style="flex:1;">
+      <div class="topbar-title">Scanner QR Code</div>
+      <div class="topbar-sub" id="scan-topbar-sub">Pointez vers le code dans l'auditoire</div>
+    </div>
+    <button class="topbar-back" onclick="stopCam();showSc('sc-home')">✕</button>
+  </div>
+
+  <!-- Vidéo -->
+  <div id="scanner-wrap" style="height:58vh;">
+    <video id="scanner-video" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+    <canvas id="scanner-canvas" style="display:none;"></canvas>
+    <!-- Masques -->
+    <div class="scan-mask-top"></div>
+    <div class="scan-mask-bottom"></div>
+    <div class="scan-mask-left"></div>
+    <div class="scan-mask-right"></div>
+    <!-- Cadre scan -->
+    <div class="scan-overlay">
+      <div class="scan-box">
+        <div class="c3"></div><div class="c4"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="scan-hint">Centrez le QR Code dans le cadre</div>
+    </div>
+  </div>
+
+  <!-- Toolbar caméra -->
+  <div class="scanner-toolbar">
+    <button class="cam-btn active-cam" id="btn-cam-back" onclick="switchCam('environment')">📷 Arrière</button>
+    <button class="cam-btn" id="btn-cam-front" onclick="switchCam('user')">🤳 Avant</button>
+    <button class="cam-btn" id="btn-torch" onclick="toggleTorch()" style="margin-left:auto;">🔦</button>
+  </div>
+  <div class="scanner-status scanning" id="scan-status-txt">🔍 Scan en cours...</div>
+
+  <div class="scanner-actions">
+    <div id="scan-err-box" style="display:none;background:var(--danger-light);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--danger);font-weight:600;margin-bottom:6px;"></div>
+    <button class="btn btn-outline" onclick="stopCam();showSc('sc-manual')">⌨️ Saisie manuelle</button>
+    <button class="btn btn-gray" onclick="stopCam();showSc('sc-home')">← Retour</button>
+  </div>
+</div>
+
+<!-- ══════════ ÉCRAN 3 : SAISIE MANUELLE ══════════ -->
+<div class="screen" id="sc-manual">
+  <div class="topbar">
+    <div class="topbar-logo">⌨️</div>
+    <div style="flex:1;">
+      <div class="topbar-title">Code manuel</div>
+      <div class="topbar-sub">Tapez le code affiché dans l'auditoire</div>
+    </div>
+    <button class="topbar-back" onclick="showSc('sc-home')">✕</button>
+  </div>
+  <div class="scroll-content">
+    <div class="card" style="margin-top:8px;">
+      <h2>🔑 Code de séance</h2>
+      <p style="font-size:13px;color:var(--gray);margin-bottom:14px;line-height:1.6;">Le code est projeté au tableau. Format : <code style="background:#f0f4f8;padding:2px 6px;border-radius:4px;font-family:'Space Mono',monospace;font-size:12px;">UDBL-L3-XXXX-XXXX</code></p>
+      <div class="fg">
+        <label>Code QR *</label>
+        <input class="code-input" type="text" id="inp-code" placeholder="UDBL-..." autocomplete="off">
+      </div>
+      <button class="btn btn-primary" onclick="doManualCode()" style="margin-top:4px;">✔ Valider ce code</button>
+    </div>
+    <button class="btn btn-outline" onclick="goScan()">📷 Scanner avec la caméra</button>
+  </div>
+</div>
+
+<!-- ══════════ ÉCRAN 4 : TIMER / PRÉSENCE EN COURS ══════════ -->
+<div class="screen" id="sc-timer">
+  <div class="topbar">
+    <div class="topbar-logo">⏱️</div>
+    <div style="flex:1;">
+      <div class="topbar-title" id="timer-page-title">Présence en cours</div>
+      <div class="topbar-sub" id="timer-page-sub">—</div>
+    </div>
+  </div>
+
+  <!-- Étapes -->
+  <div class="steps-bar">
+    <div class="step-dot done">✓</div>
+    <div class="step-line done"></div>
+    <div class="step-dot done">✓</div>
+    <div class="step-line done"></div>
+    <div class="step-dot active" id="step3">⏱</div>
+    <div class="step-line todo" id="stepline3"></div>
+    <div class="step-dot todo" id="step4">✓</div>
+  </div>
+
+  <div class="scroll-content">
+    <!-- Bannières dynamiques -->
+    <div id="dyn-banners"></div>
+
+    <!-- Timer principal -->
+    <div class="timer-card">
+      <div class="timer-label">TEMPS DE PRÉSENCE</div>
+      <div class="timer-display" id="t-display">00:00:00</div>
+      <div class="timer-sub" id="t-sub">Objectif : 4h00 de présence</div>
+      <div class="timer-bar-wrap">
+        <div class="timer-bar" id="t-bar" style="width:0%"></div>
+      </div>
+      <div class="timer-pct" id="t-pct">0%</div>
+    </div>
+
+    <!-- Infos séance -->
+    <div class="card">
+      <h3>📋 Infos séance</h3>
+      <div id="sess-info-rows"></div>
+    </div>
+
+    <!-- Géolocalisation -->
+    <div class="geo-card">
+      <h3 style="font-size:12px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:11px;">📍 Géolocalisation</h3>
+      <div class="geo-row" id="geo-row">
+        <div class="geo-dot wait" id="geo-dot"></div>
+        <div style="flex:1;">
+          <div class="geo-main-text" id="geo-main">Localisation en cours...</div>
+          <div class="geo-sub-text" id="geo-sub">Autorisez le GPS si demandé</div>
+        </div>
+        <span class="pill pill-gray" id="geo-pill">—</span>
+      </div>
+      <div class="geo-detail" id="geo-detail"></div>
+      <button class="geo-retry-btn" id="geo-retry-btn" onclick="retryGeo()" style="display:none;">🔄 Réessayer la localisation</button>
+    </div>
+
+    <!-- Anti-fraude -->
+    <div class="card" style="border-color:rgba(155,89,182,.2);">
+      <h3 style="color:var(--purple);">🔒 Anti-fraude</h3>
+      <div class="info-row"><span class="info-label">Statut</span><span class="pill pill-green">✔ Actif</span></div>
+      <div class="info-row"><span class="info-label">Sorties enregistrées</span><span class="info-val" id="exits-count">0 sortie(s)</span></div>
+      <div class="info-row"><span class="info-label">Position vérifiée</span><span id="geo-verified-pill">—</span></div>
+    </div>
+
+    <button class="btn btn-gray" onclick="openLeaveSheet()" style="margin-top:4px;">🚪 Signaler une sortie temporaire</button>
+  </div>
+</div>
+
+<!-- ══════════ ÉCRAN 5 : VALIDÉ ══════════ -->
+<div class="screen" id="sc-done">
+  <div class="validated-hero">
+    <div class="check-circle">✅</div>
+    <h1>Présence validée !</h1>
+    <p id="done-msg">Votre présence a été enregistrée avec succès.</p>
+  </div>
+  <div class="scroll-content">
+    <div class="card" style="border:2px solid var(--green);">
+      <h3 style="color:var(--green);">📋 Résumé</h3>
+      <div id="done-rows"></div>
+    </div>
+    <div class="banner banner-ok" style="margin-top:4px;">
+      <div class="banner-icon">🎉</div>
+      <div>
+        <div class="banner-title" style="color:var(--green-dark);">Bravo !</div>
+        <div class="banner-sub">Votre présence a été transmise au logiciel ePrésence UDBL et sera prise en compte dans votre bilan académique.</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="resetApp()">📲 Scanner un autre QR Code</button>
+    <button class="btn btn-gray" onclick="goHistory()" style="margin-top:10px;">📋 Voir mon historique</button>
+  </div>
+</div>
+
+<!-- ══════════ ÉCRAN 6 : HISTORIQUE ══════════ -->
+<div class="screen" id="sc-history">
+  <div class="topbar">
+    <div class="topbar-logo">📋</div>
+    <div style="flex:1;"><div class="topbar-title">Mon historique</div><div class="topbar-sub" id="hist-sub">—</div></div>
+    <button class="topbar-back" onclick="showSc('sc-home')">✕</button>
+  </div>
+  <div class="scroll-content">
+    <div id="hist-list"></div>
+    <button class="btn btn-gray" onclick="showSc('sc-home')" style="margin-top:8px;">← Retour accueil</button>
+  </div>
+</div>
+
+<!-- ══════════ FEUILLE SORTIE ══════════ -->
+<div class="leave-sheet" id="leave-sheet" onclick="e=>e.target===this&&closeLeaveSheet()">
+  <div class="leave-box">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:30px;">🚪</div>
+      <div style="font-size:16px;font-weight:800;margin-top:6px;">Sortie temporaire</div>
+      <div style="font-size:12px;color:var(--gray);margin-top:4px;">Le chronomètre sera suspendu pendant votre absence.</div>
+    </div>
+    <button class="leave-opt" onclick="doLeave('wc',10)">🚽 <span>Toilettes <span style="font-size:11px;color:var(--gray);font-weight:500;">(max 10 min)</span></span></button>
+    <button class="leave-opt" onclick="doLeave('appel',5)">📞 <span>Appel urgent <span style="font-size:11px;color:var(--gray);font-weight:500;">(max 5 min)</span></span></button>
+    <button class="leave-opt" onclick="doLeave('autre',15)">💬 <span>Autre raison <span style="font-size:11px;color:var(--gray);font-weight:500;">(max 15 min)</span></span></button>
+    <button class="btn btn-gray btn-sm" onclick="closeLeaveSheet()" style="width:100%;margin-top:4px;">Annuler</button>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-txt">Chargement...</div>
+</div>
+
+<!-- Toasts -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   ePrésence Étudiant v2 — Scanner QR optimisé + Géo robuste
+   ══════════════════════════════════════════════════════ */
+
+// ── CLÉS PARTAGÉES AVEC LE LOGICIEL ADMIN ──
+const SK = {
+  students: 'ep3_students',
+  courses:  'ep3_courses',
+  presences:'ep3_presences',
+  config:   'ep3_config',
+  sessions: 'ep3_qr_sessions',
+  notifs:   'ep3_notifs',
+};
+const AK = {
+  student: 'epa2_student',
+  history: 'epa2_history',
+  active:  'epa2_active',
+};
+
+const ld = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } };
+const sv = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const pad2 = n => String(n).padStart(2,'0');
+
+// ── ÉTAT ──
+let S = {
+  student:       null,
+  session:       null,
+  presenceId:    null,
+  startMs:       0,
+  pausedMs:      0,
+  pauseFrom:     0,
+  isPaused:      false,
+  isBreak:       false,
+  exits:         0,
+  requiredMs:    4 * 3600000,
+  timerInt:      null,
+  geoWatchId:    null,
+  geoOk:         false,
+  geoFailed:     false,
+  geoPos:        null,
+  checkInt:      null,
+  breakInt:      null,
+  notifDone:     false,
+  torchOn:       false,
+  currentFacing: 'environment',
+};
+
+// ─── NAVIGATION ──────────────────────────────────────
+function showSc(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ─── AUTOFILL depuis la base du logiciel ──────────────
+function autofillStudent(){
+  const mat = document.getElementById('inp-mat').value.trim().toUpperCase();
+  if(mat.length < 10) return;
+  const students = ld(SK.students) || [];
+  const found = students.find(s => s.matricule.toUpperCase() === mat);
+  if(found){
+    document.getElementById('inp-nom').value = found.prenom + ' ' + found.nom;
+    document.getElementById('inp-promo').value = found.promo;
+  }
+}
+
+// ─── VALIDER ÉTUDIANT & LANCER ───────────────────────
+function buildStudent(){
+  const mat = document.getElementById('inp-mat').value.trim().toUpperCase();
+  const nom = document.getElementById('inp-nom').value.trim();
+  const promo = document.getElementById('inp-promo').value;
+  if(!mat || !nom){ showToast('Remplissez le matricule et le nom', 'error'); return null; }
+  const students = ld(SK.students) || [];
+  const found = students.find(s => s.matricule.toUpperCase() === mat);
+  const student = {
+    id:         found?.id || mat,
+    matricule:  mat,
+    nom:        found ? (found.prenom + ' ' + found.nom) : nom,
+    promo:      found?.promo || promo,
+  };
+  sv(AK.student, student);
+  return student;
+}
+
+function goScan(){
+  const st = buildStudent(); if(!st) return;
+  S.student = st;
+  document.getElementById('inp-nom').value = st.nom;
+  document.getElementById('inp-promo').value = st.promo;
+  showSc('sc-scan');
+  initCamera();
+}
+
+function goManual(){
+  const st = buildStudent(); if(!st) return;
+  S.student = st;
+  document.getElementById('inp-nom').value = st.nom;
+  document.getElementById('inp-promo').value = st.promo;
+  showSc('sc-manual');
+}
+
+function goHistory(){
+  renderHistory();
+  showSc('sc-history');
+}
+
+// ─── CAMÉRA & SCAN QR ────────────────────────────────
+let mediaStream  = null;
+let scanRAF      = null;
+let scanLocked   = false;   // Évite double-déclenchement
+let jsQRLoaded   = false;
+
+function initCamera(facing){
+  const f = facing || S.currentFacing || 'environment';
+  S.currentFacing = f;
+  stopCam(false);           // stop sans réinitialiser les boutons
+  scanLocked = false;
+
+  setBtnActive('btn-cam-back', f === 'environment');
+  setBtnActive('btn-cam-front', f === 'user');
+
+  setScanStatus('⏳ Démarrage caméra...', 'scanning');
+
+  const constraints = {
+    audio: false,
+    video: {
+      facingMode: { ideal: f },
+      width:  { ideal: 1280, min: 640 },
+      height: { ideal: 720, min: 480 },
+    }
+  };
+
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => {
+      mediaStream = stream;
+      const video = document.getElementById('scanner-video');
+      video.srcObject = stream;
+      video.setAttribute('playsinline', true);
+      // onloadedmetadata => play
+      video.onloadedmetadata = () => {
+        video.play().then(() => {
+          setScanStatus('🔍 Scan en cours...', 'scanning');
+          startScanLoop();
+        }).catch(err => camError(err));
+      };
+    })
+    .catch(err => {
+      camError(err);
+    });
+}
+
+function camError(err){
+  const errBox = document.getElementById('scan-err-box');
+  let msg = '';
+  if(err.name === 'NotAllowedError')
+    msg = '⛔ Accès caméra refusé. Autorisez la caméra dans les paramètres de votre navigateur, puis revenez.';
+  else if(err.name === 'NotFoundError')
+    msg = '❌ Aucune caméra détectée sur cet appareil.';
+  else if(err.name === 'NotReadableError')
+    msg = '⚠️ Caméra occupée par une autre application. Fermez-la et réessayez.';
+  else if(err.name === 'OverconstrainedError')
+    msg = '⚠️ Paramètres caméra non supportés. Tentative en mode basique...';
+  else
+    msg = '⚠️ Erreur caméra : ' + (err.message || err.name);
+
+  if(err.name === 'OverconstrainedError'){
+    // Retry sans contraintes
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(stream => {
+        mediaStream = stream;
+        const video = document.getElementById('scanner-video');
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+          video.play().then(() => { setScanStatus('🔍 Mode basique actif', 'scanning'); startScanLoop(); });
+        };
+      })
+      .catch(e => {
+        errBox.textContent = msg;
+        errBox.style.display = 'block';
+        setScanStatus('❌ Caméra indisponible', 'error');
+      });
+    return;
+  }
+
+  errBox.textContent = msg;
+  errBox.style.display = 'block';
+  setScanStatus('❌ Caméra indisponible — utilisez la saisie manuelle', 'error');
+}
+
+function stopCam(resetUI = true){
+  if(scanRAF){ cancelAnimationFrame(scanRAF); scanRAF = null; }
+  if(mediaStream){ mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if(resetUI) setScanStatus('⏹ Scan arrêté', '');
+}
+
+function switchCam(facing){
+  S.torchOn = false;
+  initCamera(facing);
+}
+
+async function toggleTorch(){
+  if(!mediaStream) return;
+  const track = mediaStream.getVideoTracks()[0];
+  if(!track) return;
+  try {
+    const caps = track.getCapabilities();
+    if(!caps.torch){ showToast('Torche non disponible sur cet appareil', 'warning'); return; }
+    S.torchOn = !S.torchOn;
+    await track.applyConstraints({ advanced: [{ torch: S.torchOn }] });
+    document.getElementById('btn-torch').classList.toggle('active-cam', S.torchOn);
+    showToast(S.torchOn ? '🔦 Torche allumée' : '🔦 Torche éteinte', 'info');
+  } catch(e){
+    showToast('Torche non supportée', 'warning');
+  }
+}
+
+// ── BOUCLE DE SCAN (requestAnimationFrame) ────────────
+function startScanLoop(){
+  if(!jsQRLoaded){ showToast('Moteur de scan en cours de chargement...', 'info'); return; }
+  const video  = document.getElementById('scanner-video');
+  const canvas = document.getElementById('scanner-canvas');
+  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
+
+  function loop(){
+    if(!mediaStream || scanLocked){ scanRAF = requestAnimationFrame(loop); return; }
+    if(video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0){
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      try {
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(img.data, img.width, img.height, {
+          inversionAttempts: 'dontInvert',
+        });
+        if(code && code.data && code.data.length > 4){
+          scanLocked = true;
+          onQRFound(code.data);
+          return; // Sortir de la boucle
+        }
+      } catch(e){}
+    }
+    scanRAF = requestAnimationFrame(loop);
+  }
+  scanRAF = requestAnimationFrame(loop);
+}
+
+function onQRFound(data){
+  // Flash visuel
+  const overlay = document.createElement('div');
+  overlay.className = 'scan-flash';
+  document.getElementById('scanner-wrap').appendChild(overlay);
+  setTimeout(() => overlay.remove(), 600);
+
+  setScanStatus('✅ QR Code détecté !', 'scanning');
+  showToast('QR Code lu !', 'success');
+
+  setTimeout(() => {
+    stopCam();
+    showLoading('Vérification...');
+    setTimeout(() => parseAndProcess(data), 600);
+  }, 400);
+}
+
+function setScanStatus(txt, cls){
+  const el = document.getElementById('scan-status-txt');
+  if(!el) return;
+  el.textContent = txt;
+  el.className = 'scanner-status ' + cls;
+}
+
+function setBtnActive(id, active){
+  const el = document.getElementById(id);
+  if(el) el.classList.toggle('active-cam', active);
+}
+
+// ─── TRAITEMENT DU CODE QR ──────────────────────────
+function doManualCode(){
+  const raw = document.getElementById('inp-code').value.trim().toUpperCase();
+  if(!raw || raw.length < 6){ showToast('Entrez un code valide', 'error'); return; }
+  if(!S.student){
+    const st = buildStudent(); if(!st) return;
+    S.student = st;
+  }
+  showLoading('Vérification...');
+  setTimeout(() => parseAndProcess(raw), 700);
+}
+
+function parseAndProcess(rawData){
+  let code=null, sessionId=null, promo=null, courseId=null;
+  let lat=null, lng=null, radius=200, duration=4, date=null;
+
+  if(rawData.includes('?')){
+    // URL avec paramètres
+    try{
+      const qs = rawData.includes('?') ? rawData.split('?')[1] : rawData;
+      const p  = new URLSearchParams(qs);
+      code      = p.get('code');
+      sessionId = p.get('sessionId');
+      promo     = p.get('promo');
+      courseId  = p.get('courseId');
+      lat       = parseFloat(p.get('lat'))    || null;
+      lng       = parseFloat(p.get('lng'))    || null;
+      radius    = parseInt(p.get('radius'))   || 200;
+      duration  = parseInt(p.get('duration')) || 4;
+      date      = p.get('date');
+    }catch(e){ code = rawData; }
+  } else if(rawData.startsWith('UDBL-')){
+    code = rawData;
+  } else {
+    hideLoading();
+    showToast('QR Code non reconnu — ce code n\'appartient pas à ePrésence UDBL', 'error');
+    scanLocked = false;
+    return;
+  }
+
+  doProcessCode({ code, sessionId, promo, courseId, lat, lng, radius, duration, date });
+}
+
+function doProcessCode({ code, sessionId, promo, courseId, lat, lng, radius, duration, date }){
+  if(!S.student){
+    hideLoading(); showToast('Identifiez-vous d\'abord', 'error'); showSc('sc-home'); return;
+  }
+
+  // Chercher la session dans le localStorage partagé
+  const sessions = ld(SK.sessions) || [];
+  let sess = null;
+  if(sessionId) sess = sessions.find(s => s.id === sessionId);
+  if(!sess && code) sess = sessions.find(s => s.code === code);
+
+  if(!sess){
+    if(!code){ hideLoading(); showToast('Code introuvable. Demandez un nouveau QR au professeur.', 'error'); scanLocked=false; return; }
+    // Mode autonome : construire une session temporaire depuis les données du QR
+    sess = {
+      id:               sessionId || ('temp-'+uid()),
+      code:             code,
+      promo:            promo || S.student.promo,
+      courseId:         courseId || '',
+      lat:              lat  || -11.6609,
+      lng:              lng  || 27.4794,
+      radius:           radius,
+      requiredDuration: duration,
+      date:             date || new Date().toISOString().slice(0,10),
+      heure:            new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+      auditoire:        'Auditoire',
+      status:           'active',
+      pause:            '',
+      expiresAt:        Date.now() + 35 * 60000,
+    };
+    showToast('⚠️ Session non trouvée dans le système — mode autonome activé', 'warning');
+  }
+
+  // ── Vérifications ─────────────────────────────────
+  if(sess.status === 'cancelled'){
+    hideLoading();
+    showException('cancelled', sess.exception || 'Séance annulée par l\'administration.');
+    return;
+  }
+  if(sess.status === 'closed'){
+    hideLoading();
+    showException('closed', sess.exception || 'Séance déjà terminée — présence finalisée.');
+    return;
+  }
+  if(sess.status === 'active' && Date.now() > sess.expiresAt){
+    hideLoading();
+    showToast('⏰ Ce QR Code a expiré. Demandez au professeur d\'en générer un nouveau.', 'warning');
+    scanLocked = false;
+    return;
+  }
+
+  // Déjà présent ?
+  const presences = ld(SK.presences) || [];
+  const already   = presences.find(p =>
+    p.sessionId === sess.id &&
+    (p.studentId === S.student.id || p.studentId === S.student.matricule) &&
+    p.statut === 'Présent'
+  );
+  if(already){
+    hideLoading();
+    showToast('✅ Vous avez déjà validé cette séance !', 'info');
+    S.session = sess;
+    buildDoneScreen(sess, already.heure, already.duree);
+    showSc('sc-done');
+    return;
+  }
+
+  // Promotion correcte ?
+  if(sess.promo && S.student.promo && sess.promo !== S.student.promo){
+    hideLoading();
+    showToast(`⚠️ Ce QR est pour la ${sess.promo}. Vous êtes en ${S.student.promo}. Contactez votre prof.`, 'error');
+    scanLocked = false;
+    return;
+  }
+
+  hideLoading();
+  S.session     = sess;
+  S.requiredMs  = (sess.requiredDuration || 4) * 3600000;
+  beginSession(sess);
+}
+
+// ─── SESSION PRÉSENCE ────────────────────────────────
+function beginSession(sess){
+  const course = (ld(SK.courses)||[]).find(c => c.id === sess.courseId);
+  const now    = new Date();
+
+  S.startMs    = Date.now();
+  S.pausedMs   = 0;
+  S.pauseFrom  = 0;
+  S.isPaused   = false;
+  S.isBreak    = false;
+  S.exits      = 0;
+  S.notifDone  = false;
+  S.geoOk      = false;
+  S.geoFailed  = false;
+  S.presenceId = uid();
+
+  // Enregistrer présence "En attente" dans le système partagé
+  const presences = ld(SK.presences) || [];
+  presences.push({
+    id:          S.presenceId,
+    studentId:   S.student.id || S.student.matricule,
+    courseId:    sess.courseId || '',
+    sessionId:   sess.id,
+    date:        sess.date,
+    statut:      'En attente',
+    heure:       now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+    methode:     'QR Code',
+    duree:       '—',
+    studentName: S.student.nom,
+    matricule:   S.student.matricule,
+    promo:       S.student.promo,
+  });
+  sv(SK.presences, presences);
+
+  // Notifier le logiciel admin
+  pushNotifAdmin('📲', `QR scanné : ${S.student.nom} · ${S.student.promo} · ${course?.titre||'cours'}`);
+
+  // Sauvegarder pour reprise
+  sv(AK.active, {
+    presenceId: S.presenceId, sessionId: sess.id,
+    startMs: S.startMs, requiredMs: S.requiredMs, student: S.student,
+  });
+
+  // Mettre à jour l'interface timer
+  const courseName = course?.titre || 'Cours non défini';
+  document.getElementById('timer-page-title').textContent = 'Présence en cours';
+  document.getElementById('timer-page-sub').textContent   = courseName;
+  document.getElementById('t-sub').textContent = `Objectif : ${sess.requiredDuration||4}h00 de présence`;
+  document.getElementById('sess-info-rows').innerHTML = [
+    ['Cours',            courseName],
+    ['Promotion',        sess.promo || S.student.promo],
+    ['Auditoire',        sess.auditoire || '—'],
+    ['Heure début',      now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})],
+    ['Pause prévue',     sess.pause || 'Aucune'],
+    ['Durée requise',    (sess.requiredDuration||4)+'h00'],
+  ].map(([l,v]) => `<div class="info-row"><span class="info-label">${l}</span><span class="info-val">${v}</span></div>`).join('');
+
+  document.getElementById('dyn-banners').innerHTML = '';
+  document.getElementById('exits-count').textContent = '0 sortie(s)';
+  document.getElementById('geo-verified-pill').innerHTML = '<span class="pill pill-gray">En attente</span>';
+
+  showSc('sc-timer');
+
+  // Démarrer les modules
+  startTimer();
+  startGeo(sess);
+  startExceptionPoll(sess);
+  startBreakWatch(sess);
+}
+
+// ─── TIMER ───────────────────────────────────────────
+function startTimer(){
+  if(S.timerInt) clearInterval(S.timerInt);
+  S.timerInt = setInterval(tickTimer, 1000);
+}
+
+function tickTimer(){
+  if(S.isPaused) return;
+  const elapsed  = Date.now() - S.startMs - S.pausedMs;
+  const req      = S.requiredMs;
+  const pct      = Math.min(100, (elapsed / req) * 100);
+
+  const h  = Math.floor(elapsed / 3600000);
+  const m  = Math.floor((elapsed % 3600000) / 60000);
+  const sc = Math.floor((elapsed % 60000) / 1000);
+  const disp = `${pad2(h)}:${pad2(m)}:${pad2(sc)}`;
+
+  const el  = document.getElementById('t-display');
+  const bar = document.getElementById('t-bar');
+  const sub = document.getElementById('t-sub');
+  const pctEl = document.getElementById('t-pct');
+
+  if(el){
+    el.textContent = disp;
+    if(pct >= 100)      el.className = 'timer-display done';
+    else if(pct >= 80)  el.className = 'timer-display warn';
+    else                el.className = 'timer-display';
+  }
+  if(bar){
+    bar.style.width = pct + '%';
+    if(pct >= 100) bar.style.background = 'linear-gradient(90deg,#1db954,#0d7a35)';
+  }
+  if(pctEl) pctEl.textContent = Math.round(pct) + '%';
+  if(sub && pct < 100){
+    const rem = req - elapsed;
+    const rh  = Math.floor(rem / 3600000);
+    const rm  = Math.floor((rem % 3600000) / 60000);
+    sub.textContent = `Restant : ${rh}h${pad2(rm)} — objectif ${S.requiredMs/3600000}h`;
+  }
+
+  // Valider automatiquement quand 4h atteintes
+  if(elapsed >= req && !S.notifDone) validatePresence();
+}
+
+// ─── GÉOLOCALISATION ROBUSTE ─────────────────────────
+let geoRetryCount = 0;
+const GEO_MAX_RETRY = 3;
+
+function startGeo(sess){
+  if(!navigator.geolocation){
+    setGeoUI(true, 'GPS non disponible', 'Présence acceptée sans géolocalisation', '—');
+    S.geoOk = true;
+    return;
+  }
+  geoRetryCount = 0;
+  setGeoUI(null, 'Localisation en cours...', 'Autorisez le GPS si demandé', '—');
+  doGeoWatch(sess);
+}
+
+function doGeoWatch(sess){
+  if(S.geoWatchId !== null){
+    try{ navigator.geolocation.clearWatch(S.geoWatchId); }catch(e){}
+    S.geoWatchId = null;
+  }
+  S.geoWatchId = navigator.geolocation.watchPosition(
+    pos => onGeoSuccess(pos, sess),
+    err => onGeoError(err, sess),
+    {
+      enableHighAccuracy: true,
+      maximumAge:         8000,
+      timeout:            12000,
+    }
+  );
+}
+
+function onGeoSuccess(pos, sess){
+  geoRetryCount = 0;
+  S.geoPos      = pos;
+  S.geoFailed   = false;
+  document.getElementById('geo-retry-btn').style.display = 'none';
+
+  const targetLat = sess.lat  || -11.6609;
+  const targetLng = sess.lng  || 27.4794;
+  const radius    = sess.radius || 200;
+  const dist      = haversine(pos.coords.latitude, pos.coords.longitude, targetLat, targetLng);
+  const inside    = dist <= radius;
+  S.geoOk         = inside;
+
+  const accuracy  = Math.round(pos.coords.accuracy);
+  const distM     = Math.round(dist);
+  const detail    = `📍 Votre position : ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}\n📏 Distance à l'auditoire : ~${distM}m (rayon : ${radius}m)\n🎯 Précision GPS : ±${accuracy}m`;
+
+  const detailEl = document.getElementById('geo-detail');
+  if(detailEl){ detailEl.textContent = detail; detailEl.className = 'geo-detail show'; }
+
+  if(inside){
+    setGeoUI(true, '✅ Dans le périmètre de l\'auditoire', `~${distM}m · Précision ±${accuracy}m`, `✅ Confirmé`);
+    document.getElementById('geo-verified-pill').innerHTML = '<span class="pill pill-green">✅ Confirmé</span>';
+  } else {
+    setGeoUI(false, `⚠️ Hors périmètre (~${distM}m)`, `Rapprochez-vous · Rayon autorisé : ${radius}m`, `⚠️ ${distM}m`);
+    document.getElementById('geo-verified-pill').innerHTML = `<span class="pill pill-orange">⚠️ ${distM}m</span>`;
+    // Avertir si très loin
+    if(dist > radius * 3){
+      addBanner('warn', '📍 Position GPS', `Vous semblez être à ~${distM}m de l'auditoire. Si c'est une erreur GPS, restez dans l'auditoire — la présence sera validée par la durée.`);
+    }
+  }
+}
+
+function onGeoError(err, sess){
+  geoRetryCount++;
+  let msg = '';
+  if(err.code === 1)       msg = 'Accès GPS refusé. Autorisez la localisation dans les paramètres.';
+  else if(err.code === 2)  msg = 'Position indisponible. Vérifiez que le GPS est activé.';
+  else if(err.code === 3)  msg = 'Délai GPS dépassé. Nouvelle tentative...';
+  else                     msg = 'Erreur GPS : ' + err.message;
+
+  if(geoRetryCount <= GEO_MAX_RETRY){
+    setGeoUI(null, `⏳ Tentative GPS ${geoRetryCount}/${GEO_MAX_RETRY}...`, msg, '—');
+    setTimeout(() => doGeoWatch(sess), 3000);
+  } else {
+    S.geoFailed = true;
+    S.geoOk     = true; // Accepter quand même — la durée est la preuve principale
+    setGeoUI(true, 'GPS indisponible — présence acceptée', 'La durée de présence sera la preuve principale', 'N/A');
+    document.getElementById('geo-retry-btn').style.display = 'block';
+    document.getElementById('geo-verified-pill').innerHTML = '<span class="pill pill-gray">GPS N/A</span>';
+    addBanner('info', '📍 GPS indisponible', 'Le GPS n\'a pas pu être obtenu. Votre présence sera validée par la durée de 4h. Restez dans l\'auditoire.');
+  }
+}
+
+function retryGeo(){
+  geoRetryCount = 0;
+  document.getElementById('geo-retry-btn').style.display = 'none';
+  setGeoUI(null, 'Nouvelle tentative GPS...', '', '—');
+  doGeoWatch(S.session);
+}
+
+function setGeoUI(ok, mainTxt, subTxt, pillTxt){
+  const dot     = document.getElementById('geo-dot');
+  const mainEl  = document.getElementById('geo-main');
+  const subEl   = document.getElementById('geo-sub');
+  const pillEl  = document.getElementById('geo-pill');
+  const rowEl   = document.getElementById('geo-row');
+
+  if(!dot) return;
+  dot.className   = 'geo-dot ' + (ok===null?'wait':ok?'ok':'err');
+  if(mainEl) mainEl.textContent = mainTxt;
+  if(subEl)  subEl.textContent  = subTxt;
+  if(pillEl){
+    pillEl.textContent  = pillTxt;
+    pillEl.className    = 'pill ' + (ok===null?'pill-gray':ok?'pill-green':'pill-orange');
+  }
+  if(rowEl) rowEl.style.background = ok===null?'var(--gray-light)':ok?'var(--green-light)':'var(--warning-light)';
+}
+
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, toR=Math.PI/180;
+  const dLat=(lat2-lat1)*toR, dLon=(lon2-lon1)*toR;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*toR)*Math.cos(lat2*toR)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ─── POLLING EXCEPTIONS (depuis le logiciel admin) ──
+function startExceptionPoll(sess){
+  if(S.checkInt) clearInterval(S.checkInt);
+  S.checkInt = setInterval(() => {
+    if(S.notifDone) return;
+    const sessions = ld(SK.sessions) || [];
+    const cur      = sessions.find(s => s.id === sess.id);
+    if(!cur) return;
+
+    if(cur.status === 'cancelled' && !S.notifDone){
+      clearTimers();
+      S.notifDone = true;
+      markPresence('Absent', '—');
+      addBanner('cancel', '❌ Séance annulée', (cur.exception||'Séance annulée par l\'administration.') + '\nVous pouvez quitter l\'auditoire.');
+      sendPush('❌ Séance annulée', cur.exception || 'La séance a été annulée.');
+      showToast('Séance annulée — vous pouvez partir', 'error');
+    } else if(cur.status === 'closed' && !S.notifDone){
+      clearTimers();
+      S.notifDone = true;
+      validatePresence('Levée de séance anticipée');
+    } else if(cur.requiredDuration && (cur.requiredDuration * 3600000) !== S.requiredMs){
+      S.requiredMs = cur.requiredDuration * 3600000;
+      document.getElementById('t-sub').textContent = `Objectif mis à jour : ${cur.requiredDuration}h00`;
+      addBanner('info', '⏰ Durée modifiée', `Nouvelle durée requise : ${cur.requiredDuration}h`);
+      showToast(`Durée mise à jour : ${cur.requiredDuration}h`, 'info');
+    }
+    if(cur.exception?.includes('Pause prolongée') && !S.isBreak){
+      const extra = parseInt(cur.exception.match(/(\d+)\s*min/)?.[1] || 15);
+      addBanner('pause', '⏸ Pause prolongée', `La pause est prolongée de ${extra} minutes. Revenez dès que possible.`);
+    }
+  }, 20000);
+}
+
+// ─── SURVEILLANCE PAUSES ─────────────────────────────
+function startBreakWatch(sess){
+  if(!sess.pause || !sess.pause.trim()) return;
+  if(S.breakInt) clearInterval(S.breakInt);
+  S.breakInt = setInterval(() => {
+    if(S.notifDone) return;
+    const now     = new Date();
+    const nowMin  = now.getHours() * 60 + now.getMinutes();
+    const m       = sess.pause.match(/(\d{1,2})[h:](\d{0,2})\s*[-–]\s*(\d{1,2})[h:](\d{0,2})/);
+    if(!m) return;
+    const bStart  = parseInt(m[1])*60 + parseInt(m[2]||0);
+    const bEnd    = parseInt(m[3])*60 + parseInt(m[4]||0);
+    const inBreak = nowMin >= bStart && nowMin < bEnd;
+
+    if(inBreak && !S.isBreak){
+      S.isBreak   = true;
+      S.isPaused  = true;
+      S.pauseFrom = Date.now();
+      removeBanner('pause');
+      addBanner('pause', '⏸ Pause en cours', `Pause : ${sess.pause}\nLe chronomètre est suspendu. Il reprendra automatiquement.`);
+      sendPush('⏸ Pause', `Pause ${sess.pause} — revenez avant la fin !`);
+      showToast(`⏸ Pause en cours : ${sess.pause}`, 'info');
+    } else if(!inBreak && S.isBreak){
+      S.isBreak   = false;
+      S.isPaused  = false;
+      if(S.pauseFrom){ S.pausedMs += Date.now() - S.pauseFrom; S.pauseFrom = 0; }
+      removeBanner('pause');
+      addBanner('ok', '▶️ Pause terminée', 'Le chronomètre a repris. Bon courage !');
+      setTimeout(() => removeBanner('ok'), 6000);
+      sendPush('▶️ Fin de pause', 'Le cours reprend. Chronomètre relancé !');
+      showToast('▶️ Chronomètre relancé !', 'success');
+    }
+  }, 25000);
+}
+
+// ─── VALIDATION PRÉSENCE ─────────────────────────────
+function validatePresence(reason){
+  if(S.notifDone) return;
+  S.notifDone = true;
+  clearTimers();
+
+  const elapsed = Date.now() - S.startMs - S.pausedMs;
+  const h       = Math.floor(elapsed / 3600000);
+  const m       = Math.floor((elapsed % 3600000) / 60000);
+  const duree   = `${h}h${pad2(m)}min`;
+
+  markPresence('Présent', duree);
+
+  // Historique local
+  const courses = ld(SK.courses) || [];
+  const course  = courses.find(c => c.id === S.session?.courseId);
+  const hist    = ld(AK.history) || [];
+  hist.unshift({
+    id: uid(), date: new Date().toLocaleDateString('fr-FR'),
+    cours: course?.titre || 'Cours',
+    duree, statut: 'Validé',
+    heure: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+    promo: S.student?.promo || '',
+  });
+  sv(AK.history, hist.slice(0,60));
+  localStorage.removeItem(AK.active);
+
+  sendPush('✅ Présence validée !', `${h}h${pad2(m)} enregistrées pour ${course?.titre||'votre cours'}.`);
+  showToast('🎉 Présence validée avec succès !', 'success');
+
+  buildDoneScreen(S.session, new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), duree, reason);
+  showSc('sc-done');
+}
+
+function markPresence(statut, duree){
+  const presences = ld(SK.presences) || [];
+  const idx       = presences.findIndex(p => p.id === S.presenceId);
+  if(idx >= 0){
+    presences[idx].statut = statut;
+    if(duree) presences[idx].duree = duree;
+    presences[idx].heureValidation = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  }
+  sv(SK.presences, presences);
+  pushNotifAdmin(statut==='Présent'?'✅':'❌', `Présence ${statut==='Présent'?'validée':'annulée'} : ${S.student?.nom||'?'} · ${S.student?.promo||''}`);
+}
+
+function buildDoneScreen(sess, heure, duree, reason){
+  const courses = ld(SK.courses) || [];
+  const course  = courses.find(c => c.id === sess?.courseId);
+  document.getElementById('done-msg').textContent = (S.student?.nom||'Étudiant') + ' — votre présence est enregistrée.';
+  const elapsed = Date.now() - (S.startMs || Date.now()) - S.pausedMs;
+  const h = Math.floor(elapsed/3600000);
+  const m = Math.floor((elapsed%3600000)/60000);
+  const dureeFin = duree || (h>0 ? `${h}h${pad2(m)}min` : `${m}min`);
+  document.getElementById('done-rows').innerHTML = [
+    ['Étudiant',      S.student?.nom || '—'],
+    ['Matricule',     S.student?.matricule || '—'],
+    ['Promotion',     S.student?.promo || '—'],
+    ['Cours',         course?.titre || '—'],
+    ['Date',          sess?.date || new Date().toLocaleDateString('fr-FR')],
+    ['Heure validation', heure],
+    ['Durée',         dureeFin],
+    ['Méthode',       'QR Code ePrésence'],
+    ['Statut',        '✅ Présent(e)'],
+    ...(reason ? [['Note', reason]] : []),
+  ].map(([l,v]) => `<div class="info-row"><span class="info-label">${l}</span><span class="info-val">${v}</span></div>`).join('');
+}
+
+function showException(type, msg){
+  const sess = S.session || {};
+  S.session  = sess;
+  document.getElementById('timer-page-title').textContent = type==='cancelled'?'Séance annulée':'Séance terminée';
+  document.getElementById('timer-page-sub').textContent   = '';
+  document.getElementById('sess-info-rows').innerHTML     = '';
+  document.getElementById('dyn-banners').innerHTML        = '';
+  addBanner(type==='cancelled'?'cancel':'ok', type==='cancelled'?'❌ Séance annulée':'✅ Séance terminée', msg);
+  showSc('sc-timer');
+}
+
+// ─── SORTIES TEMPORAIRES ─────────────────────────────
+function openLeaveSheet()  { document.getElementById('leave-sheet').classList.add('open'); }
+function closeLeaveSheet() { document.getElementById('leave-sheet').classList.remove('open'); }
+
+function doLeave(type, maxMin){
+  closeLeaveSheet();
+  S.exits++;
+  document.getElementById('exits-count').textContent = S.exits + ' sortie(s)';
+  if(!S.isPaused){
+    S.isPaused  = true;
+    S.pauseFrom = Date.now();
+  }
+  const labels = { wc:'Toilettes', appel:'Appel urgent', autre:'Raison personnelle' };
+  addBanner('pause', `🚪 Sortie : ${labels[type]}`, `Chronomètre suspendu. Durée max : ${maxMin} min.\nRevenez au plus vite !`);
+  showToast(`Sortie enregistrée — max ${maxMin} min`, 'warning');
+
+  setTimeout(() => {
+    if(S.isPaused && !S.isBreak){
+      resumeAfterLeave();
+    }
+  }, maxMin * 60000);
+}
+
+function resumeAfterLeave(){
+  if(S.pauseFrom){ S.pausedMs += Date.now() - S.pauseFrom; S.pauseFrom = 0; }
+  S.isPaused = false;
+  removeBanner('pause');
+  showToast('▶️ Chronomètre relancé automatiquement', 'info');
+  sendPush('▶️ Retour détecté', 'Chronomètre relancé. Continuez votre présence.');
+}
+
+// ─── BANNIÈRES DYNAMIQUES ────────────────────────────
+function addBanner(type, title, sub){
+  const cont  = document.getElementById('dyn-banners');
+  const icons = { pause:'⏸', cancel:'❌', ok:'✅', info:'ℹ️', warn:'⚠️' };
+  const cls   = { pause:'banner-pause', cancel:'banner-cancel', ok:'banner-ok', info:'banner-info', warn:'banner-pause' };
+  const id    = 'banner-' + type;
+  let el      = document.getElementById(id);
+  if(!el){ el = document.createElement('div'); el.id = id; cont.prepend(el); }
+  el.className = 'banner ' + (cls[type]||'banner-info');
+  el.innerHTML = `<div class="banner-icon">${icons[type]||'📢'}</div><div><div class="banner-title">${title}</div><div class="banner-sub">${sub.replace(/\n/g,'<br>')}</div></div>`;
+}
+function removeBanner(type){
+  document.getElementById('banner-' + type)?.remove();
+}
+
+// ─── HISTORIQUE ──────────────────────────────────────
+function renderHistory(){
+  const hist = ld(AK.history) || [];
+  const st   = ld(AK.student);
+  const sub  = document.getElementById('hist-sub');
+  if(sub) sub.textContent = (st?.nom||'') + ' · ' + hist.length + ' entrée(s)';
+  const list = document.getElementById('hist-list');
+  if(!list) return;
+  if(!hist.length){
+    list.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--gray);"><div style="font-size:44px;margin-bottom:10px;">📋</div><div style="font-size:14px;font-weight:600;">Aucun historique</div><div style="font-size:12px;margin-top:6px;line-height:1.6;">Votre historique apparaîtra ici après votre première présence validée.</div></div>';
+    return;
+  }
+  list.innerHTML = hist.map(h=>`
+    <div class="history-item">
+      <div class="history-item-top">
+        <div><div class="history-cours">${h.cours}</div><div class="history-date">${h.date} · ${h.heure} · ${h.promo||''}</div></div>
+        <span class="pill pill-green">✅ ${h.statut}</span>
+      </div>
+      <div class="history-dur">Durée validée : <strong style="color:var(--green);">${h.duree}</strong></div>
+    </div>`).join('');
+}
+
+// ─── NOTIFICATIONS ───────────────────────────────────
+async function requestNotif(){
+  if(!('Notification' in window)){ showToast('Notifications non supportées sur ce navigateur', 'warning'); return; }
+  if(Notification.permission === 'granted'){ showToast('Notifications déjà activées ✅', 'info'); return; }
+  const p = await Notification.requestPermission();
+  if(p === 'granted'){
+    const btn = document.getElementById('btn-notif');
+    if(btn){ btn.textContent = '✅ Notifications activées'; btn.disabled = true; }
+    showToast('Notifications activées !', 'success');
+    new Notification('ePrésence UDBL', { body: 'Vous serez notifié(e) dès que votre présence est validée.' });
+  } else {
+    showToast('Permission refusée. Activez-les dans les réglages du navigateur.', 'warning');
+  }
+}
+
+function sendPush(title, body){
+  if('Notification' in window && Notification.permission === 'granted'){
+    try { new Notification(title, { body, icon:'🎓', tag:'ep-' + Date.now() }); }catch(e){}
+  }
+}
+
+function pushNotifAdmin(icon, text){
+  try {
+    const notifs = ld(SK.notifs) || [];
+    notifs.unshift({ id:uid(), icon, text, time:'À l\'instant', read:false });
+    if(notifs.length > 40) notifs.pop();
+    sv(SK.notifs, notifs);
+  }catch(e){}
+}
+
+// ─── RESET ───────────────────────────────────────────
+function clearTimers(){
+  if(S.timerInt)  { clearInterval(S.timerInt); S.timerInt = null; }
+  if(S.checkInt)  { clearInterval(S.checkInt); S.checkInt = null; }
+  if(S.breakInt)  { clearInterval(S.breakInt); S.breakInt = null; }
+  if(S.geoWatchId !== null){ try{ navigator.geolocation.clearWatch(S.geoWatchId); }catch(e){} S.geoWatchId = null; }
+}
+
+function resetApp(){
+  clearTimers(); stopCam();
+  const savedStudent = ld(AK.student);
+  S = {
+    student: savedStudent, session:null, presenceId:null,
+    startMs:0, pausedMs:0, pauseFrom:0, isPaused:false, isBreak:false,
+    exits:0, requiredMs:4*3600000, timerInt:null, geoWatchId:null,
+    geoOk:false, geoFailed:false, geoPos:null, checkInt:null, breakInt:null,
+    notifDone:false, torchOn:false, currentFacing:'environment',
+  };
+  document.getElementById('inp-code').value = '';
+  document.getElementById('dyn-banners').innerHTML = '';
+  document.getElementById('t-display').textContent = '00:00:00';
+  document.getElementById('t-bar').style.width = '0%';
+  document.getElementById('t-pct').textContent = '0%';
+  document.getElementById('exits-count').textContent = '0 sortie(s)';
+  scanLocked = false;
+  showSc('sc-home');
+}
+
+// ─── LOADING ─────────────────────────────────────────
+function showLoading(txt){
+  document.getElementById('loading-txt').textContent = txt || 'Chargement...';
+  document.getElementById('loading-overlay').classList.add('on');
+}
+function hideLoading(){
+  document.getElementById('loading-overlay').classList.remove('on');
+}
+
+// ─── TOAST ───────────────────────────────────────────
+function showToast(msg, type='success'){
+  const icons = {success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+  const wrap  = document.getElementById('toast-wrap');
+  const el    = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = `<span class="toast-icon">${icons[type]||'📢'}</span><span>${msg}</span>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{
+    el.style.opacity='0'; el.style.transform='translateY(-14px)';
+    setTimeout(()=>el.remove(), 300);
+  }, 4200);
+}
+
+// ─── INIT ─────────────────────────────────────────────
+(function init(){
+  // Restaurer étudiant
+  const saved = ld(AK.student);
+  if(saved){
+    document.getElementById('inp-mat').value   = saved.matricule || '';
+    document.getElementById('inp-nom').value   = saved.nom       || '';
+    document.getElementById('inp-promo').value = saved.promo     || 'L3';
+  }
+
+  // Bouton notification
+  if('Notification' in window && Notification.permission === 'granted'){
+    const btn = document.getElementById('btn-notif');
+    if(btn){ btn.textContent = '✅ Notifications activées'; btn.disabled = true; }
+  }
+
+  // Reprendre session active
+  const active = ld(AK.active);
+  if(active && (Date.now() - active.startMs) < 6 * 3600000){
+    S.student    = active.student;
+    S.presenceId = active.presenceId;
+    S.startMs    = active.startMs;
+    S.requiredMs = active.requiredMs || 4*3600000;
+    const sessions = ld(SK.sessions) || [];
+    S.session    = sessions.find(s => s.id === active.sessionId) || { id: active.sessionId, courseId:'', promo:'', auditoire:'', pause:'' };
+    const courses = ld(SK.courses) || [];
+    const course  = courses.find(c => c.id === S.session?.courseId);
+    document.getElementById('timer-page-title').textContent = 'Présence reprise';
+    document.getElementById('timer-page-sub').textContent   = course?.titre || 'Cours';
+    document.getElementById('sess-info-rows').innerHTML     = '<div class="info-row"><span class="info-label">Session</span><span class="info-val">Reprise</span></div>';
+    document.getElementById('dyn-banners').innerHTML        = '';
+    addBanner('info', '🔄 Session reprise', 'Le chronomètre continue depuis votre dernière visite.');
+    showSc('sc-timer');
+    startTimer();
+    if(S.session) { startGeo(S.session); startExceptionPoll(S.session); startBreakWatch(S.session); }
+    showToast('Session reprise — chronomètre en cours', 'info');
+    return;
+  }
+
+  // Détecter QR dans l'URL (ouverture directe depuis QR scanné par le navigateur natif)
+  if(window.location.search.includes('code=')){
+    const p       = new URLSearchParams(window.location.search);
+    const student = ld(AK.student);
+    if(student){
+      S.student = student;
+      showLoading('QR Code détecté...');
+      setTimeout(() => parseAndProcess(window.location.search.substring(1)), 700);
+    }
+  }
+})();
+
+// ── Fermer la feuille de sortie en cliquant à l'extérieur ──
+document.getElementById('leave-sheet').addEventListener('click', function(e){
+  if(e.target === this) closeLeaveSheet();
+});
+</script>
+
+<!-- jsQR — moteur de décodage QR (CDN) -->
+<script>
+// Chargement jsQR avec indicateur
+(function(){
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js';
+  script.onload = function(){
+    window.jsQRLoaded = true;
+    // Si le scanner est déjà ouvert, démarrer la boucle
+    if(document.getElementById('sc-scan').classList.contains('active') && window.mediaStream){
+      startScanLoop();
+    }
+  };
+  script.onerror = function(){
+    // Fallback CDN alternatif
+    const s2 = document.createElement('script');
+    s2.src = 'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js';
+    s2.onload = function(){ window.jsQRLoaded = true; };
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(script);
+})();
+</script>
+</body>
+</html>

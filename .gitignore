@@ -1,0 +1,6 @@
+# Ignorer les fichiers temporaires de l'éditeur
+.DS_Store
+Thumbs.db
+
+# Ignorer les dossiers de builds locaux
+node_modules/
