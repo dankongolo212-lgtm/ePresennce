@@ -624,14 +624,34 @@ function haversine(la1,lo1,la2,lo2){const R=6371000,r=Math.PI/180,dL=(la2-la1)*r
 /* POLLING EXCEPTIONS */
 function startExceptionPoll(sess){
   if(S.checkInt)clearInterval(S.checkInt);
-  S.checkInt=setInterval(()=>{
+  S.checkInt=setInterval(async()=>{
     if(S.notifDone)return;
+    /* D'abord vérifier en ligne si connecté */
+    if(fbOnline){await checkSessionExceptionsFB(sess.id);}
     const sessions=ld(SK.sessions)||[];
     const cur=sessions.find(s=>s.id===sess.id);if(!cur)return;
-    if(cur.status==='cancelled'&&!S.notifDone){clearTimers();S.notifDone=true;markPresence('Absent','—');addBanner('cancel','❌ Séance annulée',(cur.exception||'Séance annulée.')+'\nVous pouvez quitter l\'auditoire.');push('❌ Séance annulée',cur.exception||'Séance annulée.');toast('Séance annulée — vous pouvez partir','error');}
-    else if(cur.status==='closed'&&!S.notifDone){clearTimers();S.notifDone=true;validatePresence('Levée de séance');}
-    else if(cur.requiredDuration&&cur.requiredDuration*3600000!==S.reqMs){S.reqMs=cur.requiredDuration*3600000;document.getElementById('t-sub2').textContent=`Objectif mis à jour : ${cur.requiredDuration}h`;addBanner('info','⏰ Durée modifiée',`Nouvelle durée requise : ${cur.requiredDuration}h`);toast(`Durée mise à jour : ${cur.requiredDuration}h`,'info');}
-    if(cur.exception?.includes('Pause prolongée')&&!S.isBreak){const ex=parseInt(cur.exception.match(/(\d+)\s*min/)?.[1]||15);addBanner('pause','⏸ Pause prolongée',`La pause est prolongée de ${ex} min. Revenez dès que possible.`);}
+    if(cur.status==='cancelled'&&!S.notifDone){
+      clearTimers();S.notifDone=true;markPresence('Absent','—');
+      addBanner('cancel','❌ Séance annulée',(cur.exception||'Séance annulée par l\'administration.')+'\nVous pouvez quitter l\'auditoire.');
+      push('❌ Séance annulée — ePrésence UDBL',cur.exception||'La séance a été annulée. Vous pouvez partir.');
+      toast('Séance annulée — vous pouvez partir','error');
+    }
+    else if(cur.status==='closed'&&!S.notifDone){
+      clearTimers();S.notifDone=true;validatePresence('Levée de séance par le professeur');
+      push('✅ Séance levée — Présence validée !','Le professeur a levé la séance. Votre présence est enregistrée.');
+    }
+    else if(cur.requiredDuration&&cur.requiredDuration*3600000!==S.reqMs){
+      S.reqMs=cur.requiredDuration*3600000;
+      document.getElementById('t-sub2').textContent=`Objectif mis à jour : ${cur.requiredDuration}h`;
+      addBanner('info','⏰ Durée modifiée',`Nouvelle durée requise : ${cur.requiredDuration}h — mis à jour par le professeur.`);
+      push('⏰ Durée modifiée — ePrésence UDBL',`Nouvelle durée requise : ${cur.requiredDuration}h`);
+      toast(`Durée mise à jour : ${cur.requiredDuration}h`,'info');
+    }
+    if(cur.exception?.includes('Pause prolongée')&&!S.isBreak){
+      const ex=parseInt(cur.exception.match(/(\d+)\s*min/)?.[1]||15);
+      addBanner('pause','⏸ Pause prolongée',`La pause est prolongée de ${ex} min par le professeur.`);
+      push('⏸ Pause prolongée — ePrésence UDBL',`La pause est prolongée de ${ex} minutes. Revenez dès que possible.`);
+    }
   },15000);
 }
 
@@ -786,7 +806,101 @@ function toast(msg,type='success'){const icons={success:'✅',error:'❌',warnin
     const saved2=ld(AK.student);
     if(saved2){S.student=saved2;showLoad('QR Code détecté...');setTimeout(()=>parseQR(window.location.search.substring(1)),800);}
   }
+  /* Sync Firebase au démarrage */
+  initStudentFirebaseSync();
 })();
+
+/* ══════════════════════════════════════════
+   SYNC FIREBASE — App Étudiant
+   Permet la communication avec le logiciel admin
+   même sur des appareils différents
+   ══════════════════════════════════════════ */
+const FB_URL='https://epresence-udbl-default-rtdb.firebaseio.com';
+let fbOnline=false;
+
+async function fbGet(path){
+  try{const r=await fetch(`${FB_URL}/${path}.json`,{signal:AbortSignal.timeout(5000)});if(!r.ok)return null;return await r.json();}
+  catch(e){return null;}
+}
+async function fbPut(path,data){
+  try{const r=await fetch(`${FB_URL}/${path}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.ok;}
+  catch(e){return false;}
+}
+async function fbPatch(path,data){
+  try{const r=await fetch(`${FB_URL}/${path}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.ok;}
+  catch(e){return false;}
+}
+
+/* Pousser une présence vers Firebase (visible par l'admin immédiatement) */
+async function pushPresenceFB(pres){
+  const ok=await fbPatch(`presences/${pres.id}`,pres);
+  if(ok){toast('✅ Présence envoyée au serveur','info');}
+  else{toast('⚠️ Hors ligne — présence sauvée localement','warning');}
+  return ok;
+}
+
+/* Récupérer les sessions actives depuis Firebase */
+async function fetchSessionsFB(){
+  const data=await fbGet('sessions');
+  if(!data)return;
+  const local=ld(SK.sessions)||[];
+  const localIds=new Set(local.map(s=>s.id));
+  let added=0;
+  Object.values(data).forEach(s=>{
+    if(!s||!s.id)return;
+    const idx=local.findIndex(x=>x.id===s.id);
+    if(idx<0){local.push(s);added++;}
+    else{local[idx]=s;} /* mettre à jour les exceptions, clôtures, etc. */
+  });
+  if(added>0||true){sv(SK.sessions,local);}
+}
+
+/* Vérifier les exceptions de session depuis Firebase */
+async function checkSessionExceptionsFB(sessId){
+  if(!fbOnline)return;
+  const data=await fbGet(`sessions/${sessId}`);
+  if(!data||!S.notifDone)return;
+  /* Mettre à jour le localStorage */
+  const sessions=ld(SK.sessions)||[];
+  const idx=sessions.findIndex(s=>s.id===sessId);
+  if(idx>=0){sessions[idx]={...sessions[idx],...data};sv(SK.sessions,sessions);}
+}
+
+function initStudentFirebaseSync(){
+  /* Vérifier connectivité */
+  fbGet('.json').then(d=>{
+    fbOnline=d!==null;
+    if(fbOnline){toast('☁️ Connecté au serveur ePrésence','info');}
+    else{toast('📶 Mode hors ligne — sync locale uniquement','warning');}
+  });
+  /* Récupérer les sessions disponibles toutes les 10s */
+  setInterval(async()=>{
+    const online=await fbGet('.json').then(d=>d!==null).catch(()=>false);
+    fbOnline=online;
+    if(fbOnline&&S.session){
+      await checkSessionExceptionsFB(S.session.id);
+    }
+    if(fbOnline)await fetchSessionsFB();
+  },10000);
+}
+
+/* Surcharger markPresence pour pousser en ligne */
+const _origMarkPresence=markPresence;
+window.markPresence=function(statut,duree){
+  _origMarkPresence(statut,duree);
+  /* Récupérer la présence fraîchement sauvée et la pousser en ligne */
+  const pres=ld(SK.presences)||[];
+  const p=pres.find(x=>x.id===S.presId);
+  if(p&&fbOnline){pushPresenceFB(p);}
+  else if(p){
+    /* Retry dans 5s */
+    setTimeout(()=>{
+      fbGet('.json').then(ok=>{
+        if(ok!==null)pushPresenceFB(p);
+      });
+    },5000);
+  }
+};
 </script>
 
 <!-- jsQR avec double fallback CDN -->
